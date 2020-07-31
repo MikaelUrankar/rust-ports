@@ -30,7 +30,8 @@ ONLY_FOR_ARCHS_REASON?=	requires prebuilt bootstrap compiler
 
 BUILD_DEPENDS=	cmake:devel/cmake \
 		libgit2>=1.0.0:devel/libgit2 \
-		ninja:devel/ninja
+		ninja:devel/ninja \
+		bash>0:shells/bash
 LIB_DEPENDS=	libcurl.so:ftp/curl \
 		libgit2.so:devel/libgit2 \
 		libssh2.so:security/libssh2
@@ -47,7 +48,7 @@ TEST_ENV=	${MAKE_ENV} \
 CONFLICTS_INSTALL?=	rust-nightly
 
 OPTIONS_DEFINE=		DOCS GDB SOURCES WASM
-OPTIONS_DEFAULT=	SOURCES WASM
+OPTIONS_DEFAULT=	WASM
 
 GDB_DESC=	Install ports gdb (necessary for debugging rust programs)
 SOURCES_DESC=	Install source files
@@ -177,24 +178,70 @@ do-configure:
 
 do-build:
 	@cd ${WRKSRC} && \
-		${SETENV} ${MAKE_ENV} ${PYTHON_CMD} x.py build --jobs=${MAKE_JOBS_NUMBER}
+		${SETENV} ${MAKE_ENV} ${PYTHON_CMD} x.py dist --jobs=${MAKE_JOBS_NUMBER} \
+			src/libstd src/librustc cargo clippy rustfmt
+	rm -rf -- ${WRKSRC}/build/tmp/dist
+
+V=			1.45.1
+CARGO_V=		0.46.1
+CLIPPY_V=		0.0.212
+RUSTFMT_V=		1.4.17
+COMPONENTS?=	rustc-${V} rust-std-${V} cargo-${CARGO_V} \
+		clippy-${CLIPPY_V} rustfmt-${RUSTFMT_V}
 
 do-install:
-# DESTDIR not in MAKE_ENV as it would cause the bundled LLVM to be
-# staged into it during do-build.
-	@cd ${WRKSRC} && \
-		${SETENV} ${MAKE_ENV} DESTDIR=${STAGEDIR} ${PYTHON_CMD} \
-		x.py install --jobs=${MAKE_JOBS_NUMBER}
-# We autogenerate the plist file.  We do that, instead of the
-# regular pkg-plist, because several libraries have a computed
-# filename based on the absolute path of the source files.  As it
-# is user-specific, we cannot know their filename in advance.
-	@${RM} -r ${STAGEDIR}${DOCSDIR}/*.old \
-		${STAGEDIR}${DOCSDIR}/html/.lock \
-		${STAGEDIR}${DOCSDIR}/html/.stamp \
-		${STAGEDIR}${PREFIX}/lib/rustlib/install.log \
-		${STAGEDIR}${PREFIX}/lib/rustlib/manifest-* \
-		${STAGEDIR}${PREFIX}/lib/rustlib/uninstall.sh
+	@${RM} -r ${WRKSRC}/_extractdist
+.for _c in ${COMPONENTS}
+	mkdir ${WRKSRC}/_extractdist
+	cd ${WRKSRC}/_extractdist && ${TAR} xf \
+		${WRKSRC}/build/dist/${_c}-${_RUST_TARGET}.tar.gz
+	${REINPLACE_CMD} 's|/bin/bash|${LOCALBASE}/bin/bash|' \
+		${WRKSRC}/_extractdist/${_c}-${_RUST_TARGET}/install.sh 
+	cd ${WRKSRC}/_extractdist/${_c}-${_RUST_TARGET} && \
+		${LOCALBASE}/bin/bash ./install.sh \
+		--prefix="${STAGEDIR}${PREFIX}" \
+		--mandir="${STAGEDIR}${PREFIX}/man"
+	@${RM} -r ${WRKSRC}/_extractdist
+.endfor
+# XXX
+#	for lib in ${STAGEDIR}${PREFIX}/lib/lib*.* ; do \
+#		libname=$${lib##*/} ; \
+#		test -e ${STAGEDIR}${PREFIX}/lib/rustlib/${_RUST_TARGET}/lib/$${libname} && \
+#			ln -fs rustlib/${TRIPLE_ARCH}/lib/$${libname} \
+#				${STAGEDIR}${PREFIX}/lib/$${libname} ; \
+#	done
+
+#do-install:
+## DESTDIR not in MAKE_ENV as it would cause the bundled LLVM to be
+## staged into it during do-build.
+#	@cd ${WRKSRC} && \
+#		${SETENV} ${MAKE_ENV} DESTDIR=${STAGEDIR} ${PYTHON_CMD} \
+#		x.py install --jobs=${MAKE_JOBS_NUMBER}
+## We autogenerate the plist file.  We do that, instead of the
+## regular pkg-plist, because several libraries have a computed
+## filename based on the absolute path of the source files.  As it
+## is user-specific, we cannot know their filename in advance.
+#	@${RM} -r ${STAGEDIR}${DOCSDIR}/*.old \
+#		${STAGEDIR}${DOCSDIR}/html/.lock \
+#		${STAGEDIR}${DOCSDIR}/html/.stamp \
+#		${STAGEDIR}${PREFIX}/lib/rustlib/install.log \
+#		${STAGEDIR}${PREFIX}/lib/rustlib/manifest-* \
+#		${STAGEDIR}${PREFIX}/lib/rustlib/uninstall.sh
+#	@${FIND} ${STAGEDIR}${PREFIX}/bin ${STAGEDIR}${PREFIX}/lib -exec ${FILE} -i {} + | \
+#		${AWK} -F: '/executable|sharedlib/ { print $$1 }' | ${XARGS} ${STRIP_CMD}
+#	@${FIND} ${STAGEDIR}${PREFIX} -not -type d | \
+#		${SED} -E -e 's,^${STAGEDIR}${PREFIX}/,,' \
+#			-e 's,(share/man/man[1-9]/.*\.[0-9]),\1.gz,' >> ${TMPPLIST}
+
+post-install:
+	# XXX
+	${MV} ${STAGEDIR}${PREFIX}/man/man1/* ${STAGEDIR}${PREFIX}/share/man/man1
+	# cleanup
+	@${RM}	${STAGEDIR}${PREFIX}/lib/rustlib/install.log \
+		${STAGEDIR}${PREFIX}/lib/rustlib/uninstall.sh \
+		${STAGEDIR}${PREFIX}/lib/rustlib/rust-installer-version \
+		${STAGEDIR}${PREFIX}/lib/rustlib/components \
+		${STAGEDIR}${PREFIX}/lib/rustlib/manifest-*
 	@${FIND} ${STAGEDIR}${PREFIX}/bin ${STAGEDIR}${PREFIX}/lib -exec ${FILE} -i {} + | \
 		${AWK} -F: '/executable|sharedlib/ { print $$1 }' | ${XARGS} ${STRIP_CMD}
 	@${FIND} ${STAGEDIR}${PREFIX} -not -type d | \
