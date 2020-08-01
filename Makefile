@@ -179,31 +179,43 @@ do-configure:
 do-build:
 	@cd ${WRKSRC} && \
 		${SETENV} ${MAKE_ENV} ${PYTHON_CMD} x.py dist --jobs=${MAKE_JOBS_NUMBER} \
-			src/libstd src/librustc cargo clippy rustfmt
+			src/libstd src/librustc cargo clippy rustfmt src
 	rm -rf -- ${WRKSRC}/build/tmp/dist
 
-V=			1.45.1
+# XXX put that elsewhere
 CARGO_V=		0.46.1
 CLIPPY_V=		0.0.212
 RUSTFMT_V=		1.4.17
-COMPONENTS?=	rustc-${V} rust-std-${V} cargo-${CARGO_V} \
-		clippy-${CLIPPY_V} rustfmt-${RUSTFMT_V}
+COMPONENTS=	rustc-${PORTVERSION}-${_RUST_TARGET} \
+		rust-std-${PORTVERSION}-${_RUST_TARGET} \
+		cargo-${CARGO_V}-${_RUST_TARGET} \
+		clippy-${CLIPPY_V}-${_RUST_TARGET} \
+		rustfmt-${RUSTFMT_V}-${_RUST_TARGET}
+
+.if ${PORT_OPTIONS:MSOURCES}
+COMPONENTS+=	rust-src-${PORTVERSION}
+.endif
+
+.if ${PORT_OPTIONS:MWASM}
+COMPONENTS+=	rust-std-${PORTVERSION}-wasm32-unknown-unknown
+.endif
 
 do-install:
 	@${RM} -r ${WRKSRC}/_extractdist
 .for _c in ${COMPONENTS}
 	mkdir ${WRKSRC}/_extractdist
 	cd ${WRKSRC}/_extractdist && ${TAR} xf \
-		${WRKSRC}/build/dist/${_c}-${_RUST_TARGET}.tar.gz
+		${WRKSRC}/build/dist/${_c}.tar.xz
 	${REINPLACE_CMD} 's|/bin/bash|${LOCALBASE}/bin/bash|' \
-		${WRKSRC}/_extractdist/${_c}-${_RUST_TARGET}/install.sh 
-	cd ${WRKSRC}/_extractdist/${_c}-${_RUST_TARGET} && \
+		${WRKSRC}/_extractdist/${_c}/install.sh 
+	cd ${WRKSRC}/_extractdist/${_c} && \
 		${LOCALBASE}/bin/bash ./install.sh \
 		--prefix="${STAGEDIR}${PREFIX}" \
-		--mandir="${STAGEDIR}${PREFIX}/man"
+		--mandir="${STAGEDIR}${PREFIX}/share/man"
 	@${RM} -r ${WRKSRC}/_extractdist
 .endfor
-# XXX
+
+# XXX do we need that?
 #	for lib in ${STAGEDIR}${PREFIX}/lib/lib*.* ; do \
 #		libname=$${lib##*/} ; \
 #		test -e ${STAGEDIR}${PREFIX}/lib/rustlib/${_RUST_TARGET}/lib/$${libname} && \
@@ -211,33 +223,14 @@ do-install:
 #				${STAGEDIR}${PREFIX}/lib/$${libname} ; \
 #	done
 
-#do-install:
-## DESTDIR not in MAKE_ENV as it would cause the bundled LLVM to be
-## staged into it during do-build.
-#	@cd ${WRKSRC} && \
-#		${SETENV} ${MAKE_ENV} DESTDIR=${STAGEDIR} ${PYTHON_CMD} \
-#		x.py install --jobs=${MAKE_JOBS_NUMBER}
 ## We autogenerate the plist file.  We do that, instead of the
 ## regular pkg-plist, because several libraries have a computed
 ## filename based on the absolute path of the source files.  As it
 ## is user-specific, we cannot know their filename in advance.
-#	@${RM} -r ${STAGEDIR}${DOCSDIR}/*.old \
-#		${STAGEDIR}${DOCSDIR}/html/.lock \
-#		${STAGEDIR}${DOCSDIR}/html/.stamp \
-#		${STAGEDIR}${PREFIX}/lib/rustlib/install.log \
-#		${STAGEDIR}${PREFIX}/lib/rustlib/manifest-* \
-#		${STAGEDIR}${PREFIX}/lib/rustlib/uninstall.sh
-#	@${FIND} ${STAGEDIR}${PREFIX}/bin ${STAGEDIR}${PREFIX}/lib -exec ${FILE} -i {} + | \
-#		${AWK} -F: '/executable|sharedlib/ { print $$1 }' | ${XARGS} ${STRIP_CMD}
-#	@${FIND} ${STAGEDIR}${PREFIX} -not -type d | \
-#		${SED} -E -e 's,^${STAGEDIR}${PREFIX}/,,' \
-#			-e 's,(share/man/man[1-9]/.*\.[0-9]),\1.gz,' >> ${TMPPLIST}
-
 post-install:
-	# XXX
-	${MV} ${STAGEDIR}${PREFIX}/man/man1/* ${STAGEDIR}${PREFIX}/share/man/man1
 	# cleanup
-	@${RM}	${STAGEDIR}${PREFIX}/lib/rustlib/install.log \
+	@${RM} -r ${STAGEDIR}${DOCSDIR}/*.old \
+		${STAGEDIR}${PREFIX}/lib/rustlib/install.log \
 		${STAGEDIR}${PREFIX}/lib/rustlib/uninstall.sh \
 		${STAGEDIR}${PREFIX}/lib/rustlib/rust-installer-version \
 		${STAGEDIR}${PREFIX}/lib/rustlib/components \
