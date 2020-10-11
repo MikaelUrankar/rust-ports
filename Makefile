@@ -2,11 +2,13 @@
 # $FreeBSD$
 
 PORTNAME=	rust
-PORTVERSION?=	1.45.2
+PORTVERSION?=	1.47.0
 PORTREVISION?=	0
 CATEGORIES=	lang
 MASTER_SITES=	https://static.rust-lang.org/dist/:src \
 		https://dev-static.rust-lang.org/dist/:src \
+		LOCAL/bdragon/rust:bootstrap \
+		LOCAL/mikael/rust:bootstrap \
 		LOCAL/tobik/rust:bootstrap \
 		https://static.rust-lang.org/dist/:bootstrap
 DISTNAME?=	${PORTNAME}c-${PORTVERSION}-src
@@ -25,7 +27,7 @@ LICENSE_FILE_APACHE20=	${WRKSRC}/LICENSE-APACHE
 LICENSE_FILE_MIT=	${WRKSRC}/LICENSE-MIT
 
 IGNORE_FreeBSD_11_powerpc64=	is missing a bootstrap for FreeBSD 11.x powerpc64
-ONLY_FOR_ARCHS?=	aarch64 amd64 armv6 armv7 i386 powerpc64
+ONLY_FOR_ARCHS?=	aarch64 amd64 armv6 armv7 i386 powerpc64 powerpc64le
 ONLY_FOR_ARCHS_REASON?=	requires prebuilt bootstrap compiler
 
 BUILD_DEPENDS=	cmake:devel/cmake \
@@ -38,7 +40,8 @@ LIB_DEPENDS=	libcurl.so:ftp/curl \
 
 USES=		pkgconfig python:3.3+,build ssl tar:xz
 
-MAKE_ENV=	LIBGIT2_SYS_USE_PKG_CONFIG=1 \
+MAKE_ENV=	DESTDIR=${STAGEDIR} \
+		LIBGIT2_SYS_USE_PKG_CONFIG=1 \
 		LIBSSH2_SYS_USE_PKG_CONFIG=1 \
 		OPENSSL_DIR="${OPENSSLBASE}" \
 		RUST_BACKTRACE=1
@@ -49,6 +52,7 @@ CONFLICTS_INSTALL?=	rust-nightly
 
 OPTIONS_DEFINE=		DOCS GDB SOURCES WASM
 OPTIONS_DEFAULT=	SOURCES WASM
+OPTIONS_EXCLUDE=	DOCS # https://github.com/rust-lang/rust/issues/76526
 
 GDB_DESC=	Install ports gdb (necessary for debugging rust programs)
 SOURCES_DESC=	Install source files
@@ -63,9 +67,14 @@ WASM_VARS=		_RUST_BUILD_WASM=true \
 WASM_VARS_OFF=		_RUST_BUILD_WASM=false
 
 # See WRKSRC/src/stage0.txt for the date and version values.
-BOOTSTRAPS_DATE?=		2020-06-18
-RUST_BOOTSTRAP_VERSION?=	1.44.1
-CARGO_BOOTSTRAP_VERSION?=	0.45.1
+BOOTSTRAPS_DATE?=		2020-08-27
+RUST_BOOTSTRAP_VERSION?=	1.46.0
+CARGO_BOOTSTRAP_VERSION?=	0.47.0
+
+# grep "^version = " src/tools/clippy/Cargo.toml src/tools/cargo/Cargo.toml src/tools/rustfmt/Cargo.toml
+CARGO_V=		0.48.0
+CLIPPY_V=		0.0.212
+RUSTFMT_V=		1.4.20
 
 BOOTSTRAPS_SUFFIX?=		${BOOTSTRAPS_SUFFIX_${ARCH}}
 BOOTSTRAPS_SUFFIX_powerpc64?=	-${PPC_ABI:tl}
@@ -179,13 +188,9 @@ do-configure:
 do-build:
 	@cd ${WRKSRC} && \
 		${SETENV} ${MAKE_ENV} ${PYTHON_CMD} x.py dist --jobs=${MAKE_JOBS_NUMBER} \
-			src/libstd src/librustc cargo clippy rustfmt src
-	rm -rf -- ${WRKSRC}/build/tmp/dist
+			library/std src/librustc cargo clippy rustfmt src
+	${RM} ${WRKSRC}/build/tmp/dist
 
-# XXX put that elsewhere
-CARGO_V=		0.46.1
-CLIPPY_V=		0.0.212
-RUSTFMT_V=		1.4.17
 COMPONENTS=	rustc-${PORTVERSION}-${_RUST_TARGET} \
 		rust-std-${PORTVERSION}-${_RUST_TARGET} \
 		cargo-${CARGO_V}-${_RUST_TARGET} \
@@ -203,11 +208,11 @@ COMPONENTS+=	rust-std-${PORTVERSION}-wasm32-unknown-unknown
 do-install:
 	@${RM} -r ${WRKSRC}/_extractdist
 .for _c in ${COMPONENTS}
-	mkdir ${WRKSRC}/_extractdist
+	${MKDIR} ${WRKSRC}/_extractdist
 	cd ${WRKSRC}/_extractdist && ${TAR} xf \
 		${WRKSRC}/build/dist/${_c}.tar.xz
 	${REINPLACE_CMD} 's|/bin/bash|${LOCALBASE}/bin/bash|' \
-		${WRKSRC}/_extractdist/${_c}/install.sh 
+		${WRKSRC}/_extractdist/${_c}/install.sh
 	cd ${WRKSRC}/_extractdist/${_c} && \
 		${LOCALBASE}/bin/bash ./install.sh \
 		--prefix="${STAGEDIR}${PREFIX}" \
