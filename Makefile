@@ -2,7 +2,7 @@
 # $FreeBSD$
 
 PORTNAME=	rust
-PORTVERSION?=	1.47.0
+PORTVERSION?=	1.48.0
 PORTREVISION?=	0
 CATEGORIES=	lang
 MASTER_SITES=	https://static.rust-lang.org/dist/:src \
@@ -38,7 +38,7 @@ LIB_DEPENDS=	libcurl.so:ftp/curl \
 		libgit2.so:devel/libgit2 \
 		libssh2.so:security/libssh2
 
-USES=		pkgconfig python:3.3+,build ssl tar:xz
+USES=		pkgconfig python:3.6+,build ssl tar:xz
 
 MAKE_ENV=	DESTDIR=${STAGEDIR} \
 		LIBGIT2_SYS_USE_PKG_CONFIG=1 \
@@ -67,14 +67,14 @@ WASM_VARS=		_RUST_BUILD_WASM=true \
 WASM_VARS_OFF=		_RUST_BUILD_WASM=false
 
 # See WRKSRC/src/stage0.txt for the date and version values.
-BOOTSTRAPS_DATE?=		2020-08-27
-RUST_BOOTSTRAP_VERSION?=	1.46.0
-CARGO_BOOTSTRAP_VERSION?=	0.47.0
+BOOTSTRAPS_DATE?=		2020-10-08
+RUST_BOOTSTRAP_VERSION?=	1.47.0
+CARGO_BOOTSTRAP_VERSION?=	0.48.0
 
 # grep "^version = " src/tools/clippy/Cargo.toml src/tools/cargo/Cargo.toml src/tools/rustfmt/Cargo.toml
-CARGO_V=		0.48.0
+CARGO_V=		0.49.0
 CLIPPY_V=		0.0.212
-RUSTFMT_V=		1.4.20
+RUSTFMT_V=		1.4.24
 
 BOOTSTRAPS_SUFFIX?=		${BOOTSTRAPS_SUFFIX_${ARCH}}
 BOOTSTRAPS_SUFFIX_powerpc64?=	-${PPC_ABI:tl}
@@ -182,8 +182,11 @@ do-configure:
 	@${ECHO_CMD} 'missing-tools=true' >> ${WRKSRC}/config.toml
 .endif
 	@${REINPLACE_CMD} 's,%CC%,${CC},g' \
-		${WRKSRC}/src/librustc_llvm/build.rs \
 		${WRKSRC}/src/bootstrap/native.rs
+# this reinplace_cmd is used for ppc64-elfv1, don't remove it
+# even if sed_checked.sh says it's unused
+	@${REINPLACE_CMD} 's,%CC%,${CC},g' \
+		${WRKSRC}/compiler/rustc_llvm/build.rs
 
 do-build:
 	@cd ${WRKSRC} && \
