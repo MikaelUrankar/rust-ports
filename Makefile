@@ -192,7 +192,7 @@ do-build:
 	@cd ${WRKSRC} && \
 		${SETENV} ${MAKE_ENV} ${PYTHON_CMD} x.py dist --jobs=${MAKE_JOBS_NUMBER} \
 			library/std src/librustc cargo clippy rustfmt src
-	${RM} ${WRKSRC}/build/tmp/dist
+	${RM} -rf ${WRKSRC}/build/tmp/dist
 
 COMPONENTS=	rustc-${PORTVERSION}-${_RUST_TARGET} \
 		rust-std-${PORTVERSION}-${_RUST_TARGET} \
