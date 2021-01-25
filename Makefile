@@ -73,11 +73,6 @@ WASM_VARS_OFF=		_RUST_BUILD_WASM=false
 BOOTSTRAPS_DATE?=		2020-11-19
 RUST_BOOTSTRAP_VERSION?=	1.48.0
 
-# grep "^version = " src/tools/clippy/Cargo.toml src/tools/cargo/Cargo.toml src/tools/rustfmt/Cargo.toml
-CARGO_V=		0.50.0
-CLIPPY_V=		0.0.212
-RUSTFMT_V=		1.4.25
-
 BOOTSTRAPS_SUFFIX?=		${BOOTSTRAPS_SUFFIX_${ARCH}}
 BOOTSTRAPS_SUFFIX_powerpc64?=	-${PPC_ABI:tl}
 
@@ -198,9 +193,9 @@ do-build:
 
 COMPONENTS=	rustc-${PORTVERSION}-${_RUST_TARGET} \
 		rust-std-${PORTVERSION}-${_RUST_TARGET} \
-		cargo-${CARGO_V}-${_RUST_TARGET} \
-		clippy-${CLIPPY_V}-${_RUST_TARGET} \
-		rustfmt-${RUSTFMT_V}-${_RUST_TARGET}
+		cargo-${PORTVERSION}-${_RUST_TARGET} \
+		clippy-${PORTVERSION}-${_RUST_TARGET} \
+		rustfmt-${PORTVERSION}-${_RUST_TARGET}
 
 .if ${PORT_OPTIONS:MSOURCES}
 COMPONENTS+=	rust-src-${PORTVERSION}
@@ -225,18 +220,10 @@ do-install:
 	@${RM} -r ${WRKSRC}/_extractdist
 .endfor
 
-# XXX do we need that?
-#	for lib in ${STAGEDIR}${PREFIX}/lib/lib*.* ; do \
-#		libname=$${lib##*/} ; \
-#		test -e ${STAGEDIR}${PREFIX}/lib/rustlib/${_RUST_TARGET}/lib/$${libname} && \
-#			ln -fs rustlib/${TRIPLE_ARCH}/lib/$${libname} \
-#				${STAGEDIR}${PREFIX}/lib/$${libname} ; \
-#	done
-
-## We autogenerate the plist file.  We do that, instead of the
-## regular pkg-plist, because several libraries have a computed
-## filename based on the absolute path of the source files.  As it
-## is user-specific, we cannot know their filename in advance.
+# We autogenerate the plist file.  We do that, instead of the
+# regular pkg-plist, because several libraries have a computed
+# filename based on the absolute path of the source files.  As it
+# is user-specific, we cannot know their filename in advance.
 post-install:
 	# cleanup
 	@${RM} -r ${STAGEDIR}${DOCSDIR}/*.old \
