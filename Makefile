@@ -32,8 +32,7 @@ ONLY_FOR_ARCHS_REASON?=	requires prebuilt bootstrap compiler
 
 BUILD_DEPENDS=	cmake:devel/cmake \
 		libgit2>=1.0.0:devel/libgit2 \
-		ninja:devel/ninja \
-		bash>0:shells/bash
+		ninja:devel/ninja
 LIB_DEPENDS=	libcurl.so:ftp/curl \
 		libgit2.so:devel/libgit2 \
 		libssh2.so:security/libssh2
@@ -211,10 +210,8 @@ do-install:
 	${MKDIR} ${WRKSRC}/_extractdist
 	cd ${WRKSRC}/_extractdist && ${TAR} xf \
 		${WRKSRC}/build/dist/${_c}.tar.xz
-	${REINPLACE_CMD} 's|/bin/bash|${LOCALBASE}/bin/bash|' \
-		${WRKSRC}/_extractdist/${_c}/install.sh
 	cd ${WRKSRC}/_extractdist/${_c} && \
-		${LOCALBASE}/bin/bash ./install.sh \
+		${SH} ./install.sh \
 		--prefix="${STAGEDIR}${PREFIX}" \
 		--mandir="${STAGEDIR}${PREFIX}/share/man"
 	@${RM} -r ${WRKSRC}/_extractdist
@@ -225,7 +222,6 @@ do-install:
 # filename based on the absolute path of the source files.  As it
 # is user-specific, we cannot know their filename in advance.
 post-install:
-	# cleanup
 	@${RM} -r ${STAGEDIR}${DOCSDIR}/*.old \
 		${STAGEDIR}${PREFIX}/lib/rustlib/install.log \
 		${STAGEDIR}${PREFIX}/lib/rustlib/uninstall.sh \
