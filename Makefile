@@ -216,7 +216,6 @@ do-install:
 		${SH} ./install.sh \
 		--prefix="${STAGEDIR}${PREFIX}" \
 		--mandir="${STAGEDIR}${PREFIX}/share/man"
-	@${RM} -r ${WRKSRC}/_extractdist
 .endfor
 
 # We autogenerate the plist file.  We do that, instead of the
