@@ -88,23 +88,23 @@ _RUSTC_BOOTSTRAP=	${BOOTSTRAPS_DATE_${ARCH}:U${BOOTSTRAPS_DATE}}/rustc-${RUST_BO
 _RUST_STD_BOOTSTRAP=	${BOOTSTRAPS_DATE_${ARCH}:U${BOOTSTRAPS_DATE}}/rust-std-${RUST_BOOTSTRAP_VERSION_${ARCH}:U${RUST_BOOTSTRAP_VERSION}}-${_RUST_TARGET}
 _CARGO_BOOTSTRAP=	${BOOTSTRAPS_DATE_${ARCH}:U${BOOTSTRAPS_DATE}}/cargo-${RUST_BOOTSTRAP_VERSION_${ARCH}:U${RUST_BOOTSTRAP_VERSION}}-${_RUST_TARGET}
 
-COMPONENTS=	cargo-${PORTVERSION}-${_RUST_TARGET} \
-		clippy-${PORTVERSION}-${_RUST_TARGET} \
-		rls-${PORTVERSION}-${_RUST_TARGET} \
-		rustc-${PORTVERSION}-${_RUST_TARGET} \
-		rust-analysis-${PORTVERSION}-${_RUST_TARGET} \
-		rust-std-${PORTVERSION}-${_RUST_TARGET} \
-		rustfmt-${PORTVERSION}-${_RUST_TARGET}
+COMPONENTS=		cargo-${PORTVERSION}-${_RUST_TARGET} \
+			clippy-${PORTVERSION}-${_RUST_TARGET} \
+			rls-${PORTVERSION}-${_RUST_TARGET} \
+			rustc-${PORTVERSION}-${_RUST_TARGET} \
+			rust-analysis-${PORTVERSION}-${_RUST_TARGET} \
+			rust-std-${PORTVERSION}-${_RUST_TARGET} \
+			rustfmt-${PORTVERSION}-${_RUST_TARGET}
 
 .include <bsd.port.pre.mk>
 
 .if ${PORT_OPTIONS:MSOURCES}
-COMPONENTS+=	rust-src-${PORTVERSION}
+COMPONENTS+=		rust-src-${PORTVERSION}
 .endif
 
 .if ${PORT_OPTIONS:MWASM}
-COMPONENTS+=	rust-analysis-${PORTVERSION}-wasm32-unknown-unknown \
-		rust-std-${PORTVERSION}-wasm32-unknown-unknown
+COMPONENTS+=		rust-analysis-${PORTVERSION}-wasm32-unknown-unknown \
+			rust-std-${PORTVERSION}-wasm32-unknown-unknown
 .endif
 
 .if exists(${PATCHDIR}/${ARCH}${BOOTSTRAPS_SUFFIX})
