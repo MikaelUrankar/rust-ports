@@ -141,8 +141,7 @@ do-configure:
 		${SH} ${SCRIPTSDIR}/rust-compat11-canary.sh
 .for _component in cargo rust-std rustc
 	@cd ${WRKDIR}/${_component}-*-${OPSYS:tl} && \
-		${SH} install.sh --disable-ldconfig --prefix=${WRKDIR}/bootstrap \
-		--verbose
+		${SH} install.sh --prefix=${WRKDIR}/bootstrap --verbose
 .endfor
 	@${ECHO_CMD} '[build]' > ${WRKSRC}/config.toml
 	@${ECHO_CMD} 'vendor=true' >> ${WRKSRC}/config.toml
