@@ -49,6 +49,7 @@ TEST_ENV=	${MAKE_ENV} \
 
 CONFLICTS_INSTALL?=	rust-nightly
 
+# xxx gdb
 OPTIONS_DEFINE=		DOCS GDB SOURCES WASM
 OPTIONS_DEFAULT=	SOURCES WASM
 OPTIONS_EXCLUDE=	DOCS # https://github.com/rust-lang/rust/issues/76526
@@ -118,6 +119,7 @@ BUILD_DEPENDS+=	gcc9:lang/gcc9
 USE_GCC=	yes
 .endif
 
+#xxx
 .if ${ARCH} == aarch64 && ${OSVERSION} < 1200502
 IGNORE=	fails to run due to a bug in rtld, update to 12-STABLE r342847 or 13-CURRENT r342113
 .endif
@@ -206,10 +208,10 @@ do-build:
 			library/std src/librustc ${_RUST_TOOLS}
 
 do-install:
+# xxx sh ${WRKSRC}/_extractdist/${_c}/install.sh
 	${MKDIR} ${WRKSRC}/_extractdist
 .for _c in ${COMPONENTS}
-	cd ${WRKSRC}/_extractdist && \
-		${TAR} xf ${WRKSRC}/build/dist/${_c}.tar.xz
+	${TAR} xf ${WRKSRC}/build/dist/${_c}.tar.xz -C ${WRKSRC}/_extractdist
 	cd ${WRKSRC}/_extractdist/${_c} && \
 		${SH} install.sh \
 		--prefix="${STAGEDIR}${PREFIX}" \
