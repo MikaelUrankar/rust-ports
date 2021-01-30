@@ -204,7 +204,7 @@ do-configure:
 do-build:
 	@cd ${WRKSRC} && \
 		${SETENV} ${MAKE_ENV} ${PYTHON_CMD} x.py dist --jobs=${MAKE_JOBS_NUMBER} \
-			analysis library/std src/librustc cargo clippy rls rustfmt src
+			library/std src/librustc ${_RUST_TOOLS}
 
 do-install:
 	${MKDIR} ${WRKSRC}/_extractdist
@@ -234,6 +234,7 @@ post-install:
 		${SED} -E -e 's,^${STAGEDIR}${PREFIX}/,,' \
 			-e 's,(share/man/man[1-9]/.*\.[0-9]),\1.gz,' >> ${TMPPLIST}
 
+# XXX still needed?
 post-install-SOURCES-on:
 # Silence stage-qa warnings by sanitizing permissions on sources
 	@${FIND} ${STAGEDIR}${PREFIX}/lib/rustlib/src -type f -exec ${CHMOD} \
