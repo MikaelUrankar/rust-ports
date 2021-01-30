@@ -207,13 +207,12 @@ do-build:
 			analysis library/std src/librustc cargo clippy rls rustfmt src
 
 do-install:
-	@${RM} -r ${WRKSRC}/_extractdist
-.for _c in ${COMPONENTS}
 	${MKDIR} ${WRKSRC}/_extractdist
-	cd ${WRKSRC}/_extractdist && ${TAR} xf \
-		${WRKSRC}/build/dist/${_c}.tar.xz
+.for _c in ${COMPONENTS}
+	cd ${WRKSRC}/_extractdist && \
+		${TAR} xf ${WRKSRC}/build/dist/${_c}.tar.xz
 	cd ${WRKSRC}/_extractdist/${_c} && \
-		${SH} ./install.sh \
+		${SH} install.sh \
 		--prefix="${STAGEDIR}${PREFIX}" \
 		--mandir="${STAGEDIR}${PREFIX}/share/man"
 .endfor
