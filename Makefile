@@ -82,29 +82,35 @@ _RUST_ARCH_amd64=	x86_64
 _RUST_ARCH_i386=	i686
 _RUST_TARGET=		${_RUST_ARCH_${ARCH}:U${ARCH}}-unknown-${OPSYS:tl}
 _RUST_TARGETS=		${_RUST_TARGET}
-_RUST_TOOLS=		analysis cargo clippy rls rustfmt
+_RUST_TOOLS=		analysis cargo clippy
 
 _RUSTC_BOOTSTRAP=	${BOOTSTRAPS_DATE_${ARCH}:U${BOOTSTRAPS_DATE}}/rustc-${RUST_BOOTSTRAP_VERSION_${ARCH}:U${RUST_BOOTSTRAP_VERSION}}-${_RUST_TARGET}
 _RUST_STD_BOOTSTRAP=	${BOOTSTRAPS_DATE_${ARCH}:U${BOOTSTRAPS_DATE}}/rust-std-${RUST_BOOTSTRAP_VERSION_${ARCH}:U${RUST_BOOTSTRAP_VERSION}}-${_RUST_TARGET}
 _CARGO_BOOTSTRAP=	${BOOTSTRAPS_DATE_${ARCH}:U${BOOTSTRAPS_DATE}}/cargo-${RUST_BOOTSTRAP_VERSION_${ARCH}:U${RUST_BOOTSTRAP_VERSION}}-${_RUST_TARGET}
 
-COMPONENTS=		cargo-${PORTVERSION}-${_RUST_TARGET} \
-			clippy-${PORTVERSION}-${_RUST_TARGET} \
-			rls-${PORTVERSION}-${_RUST_TARGET} \
-			rustc-${PORTVERSION}-${_RUST_TARGET} \
-			rust-analysis-${PORTVERSION}-${_RUST_TARGET} \
-			rust-std-${PORTVERSION}-${_RUST_TARGET} \
-			rustfmt-${PORTVERSION}-${_RUST_TARGET}
+PACKAGE_VERS=		${NIGHTLY_DATE:?nightly:${PORTVERSION}}
+_COMPONENTS=		cargo-${PACKAGE_VERS}-${_RUST_TARGET} \
+			clippy-${PACKAGE_VERS}-${_RUST_TARGET} \
+			rustc-${PACKAGE_VERS}-${_RUST_TARGET} \
+			rust-analysis-${PACKAGE_VERS}-${_RUST_TARGET} \
+			rust-std-${PACKAGE_VERS}-${_RUST_TARGET}
 
 .include <bsd.port.pre.mk>
 
+# rls and rustfmt don't build on nightly
+.if !defined(NIGHTLY_DATE)
+_RUST_TOOLS+=	rls rustfmt
+_COMPONENTS+=	rls-${PORTVERSION}-${_RUST_TARGET} \
+		rustfmt-${PORTVERSION}-${_RUST_TARGET}
+.endif
+
 .if ${PORT_OPTIONS:MSOURCES}
-COMPONENTS+=		rust-src-${PORTVERSION}
+_COMPONENTS+=		rust-src-${PACKAGE_VERS}
 .endif
 
 .if ${PORT_OPTIONS:MWASM}
-COMPONENTS+=		rust-analysis-${PORTVERSION}-wasm32-unknown-unknown \
-			rust-std-${PORTVERSION}-wasm32-unknown-unknown
+_COMPONENTS+=		rust-analysis-${PACKAGE_VERS}-wasm32-unknown-unknown \
+			rust-std-${PACKAGE_VERS}-wasm32-unknown-unknown
 .endif
 
 .if exists(${PATCHDIR}/${ARCH}${BOOTSTRAPS_SUFFIX})
@@ -208,7 +214,8 @@ do-build:
 
 do-install:
 	${MKDIR} ${WRKSRC}/_extractdist
-.for _c in ${COMPONENTS}
+.for _c in ${_COMPONENTS}
+	${RM} -r ${WRKSRC}/_extractdist/*
 	${TAR} xf ${WRKSRC}/build/dist/${_c}.tar.xz -C ${WRKSRC}/_extractdist
 	cd ${WRKSRC}/_extractdist/${_c} && \
 		${SH} install.sh \
