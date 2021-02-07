@@ -219,8 +219,9 @@ do-install:
 	${TAR} xf ${WRKSRC}/build/dist/${_c}.tar.xz -C ${WRKSRC}/_extractdist
 	cd ${WRKSRC}/_extractdist/${_c} && \
 		${SH} install.sh \
-		--prefix="${STAGEDIR}${PREFIX}" \
-		--mandir="${STAGEDIR}${PREFIX}/share/man"
+		--docdir="${STAGEDIR}${DOCSDIR}" \
+		--mandir="${STAGEDIR}${PREFIX}/share/man" \
+		--prefix="${STAGEDIR}${PREFIX}"
 .endfor
 
 # We autogenerate the plist file.  We do that, instead of the
